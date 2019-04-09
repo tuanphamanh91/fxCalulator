@@ -29,20 +29,20 @@ class App extends Component {
       <div style={styles.container} >
         <div style={styles.title}> Forex Calculator </div>
         <Grid container spacing={24}>
-          <Grid item xs={2} sm={5}>
+          <Grid item xs={5} sm={5}>
             {this._renderCurrency1Selection()}
           </Grid>
           <Grid item xs={5} sm={5}>
             {this._renderCurrency2Selection()}
           </Grid>
           <Grid item xs={2} sm={2}>
-            <button style={styles.buttonRefresh}><img src={ReloadImage} alt="my image" onClick={() => this.getRate()} /></button>
+            <button style={styles.buttonRefresh}><img src={ReloadImage} alt="reload" onClick={() => this.getRate()} /></button>
           </Grid>
           <Grid item xs={10} sm={10}>
             <TextField
               id="amount-risk"
               name="amountRisk"
-              label="Amount To Risk ($)"
+              label="Amount To Risk ($):"
               type="number"
               value={this.state.risk}
               onChange={this.handleChange('risk')}
@@ -55,7 +55,7 @@ class App extends Component {
             <TextField
               id="entryPrice"
               name="entryPrice"
-              label="Entry Price"
+              label="Entry Price:"
               value={this.state.entryPrice}
               onChange={this.handleChange('entryPrice')}
               type="number"
@@ -67,7 +67,7 @@ class App extends Component {
             <TextField
               id="stoploss"
               name="stoploss"
-              label="Stop Loss Price"
+              label="Stoploss Price:"
               type="number"
               value={this.state.stopLossPrice}
               onChange={this.handleChange('stopLossPrice')}
@@ -84,7 +84,7 @@ class App extends Component {
 
           </Grid>
           <Grid item xs={5} sm={5}>
-            <div style={{ fontSize: 20 }}>{`Pair: ${this.state.currency1}.${this.state.currency2}`}</div>
+            <div style={{ fontSize: 20 }}>{`Pair: ${this.state.currency1}${this.state.currency2}`}</div>
           </Grid>
           <Grid item xs={5} sm={5}>
             {this._renderPipValue()}
@@ -101,7 +101,7 @@ class App extends Component {
   _renderCurrency1Selection() {
     return (
       <FormControl style={{ width: '100%' }}>
-        <InputLabel htmlFor="age-native-simple">Currency</InputLabel>
+        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
         <Select
           native
           onChange={this.handleChangeSelection("currency1")}
@@ -125,7 +125,7 @@ class App extends Component {
   _renderCurrency2Selection() {
     return (
       <FormControl style={{ width: '100%' }}>
-        <InputLabel htmlFor="age-native-simple">Currency</InputLabel>
+        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
         <Select
           native
           onChange={this.handleChangeSelection("currency2")}
@@ -148,9 +148,9 @@ class App extends Component {
   _renderPipValue() {
     var text = "";
     if (this.state.entryPrice >= this.state.stopLossPrice) {
-      text = `LONG: ${this.state.pip} pips`
+      text = `LONG: ${this.state.pip} pips.`
     } else {
-      text = `SHORT: ${this.state.pip} pips`
+      text = `SHORT: ${this.state.pip} pips.`
     }
     return (
       <div style={{ fontSize: 20 }}>{text}</div>
@@ -158,7 +158,7 @@ class App extends Component {
   }
 
   handleChange = name => event => {
-    this.setState({ [name]: event.target.value }, () => this.calculatePip());
+    this.setState({ [name]: parseFloat(event.target.value) }, () => this.calculatePip());
   };
 
   calculatePip() {
@@ -168,6 +168,7 @@ class App extends Component {
     } else if (this.state.currency1 !== 'XAU') {
       pip = (pip * 10000).toFixed(1);
     }
+    pip = parseFloat(pip);
     if (pip < 0) {
       pip = 0 - pip;
     }
@@ -193,6 +194,7 @@ class App extends Component {
           } else {
             rate = rate.toFixed(4)
           }
+          rate = parseFloat(rate);
           this.setState({ entryPrice: rate, stopLossPrice: rate, rate, pip: 0, lot: 0 })
         })
     }
@@ -224,37 +226,36 @@ class App extends Component {
     if (currency2 !== 'USD') {
       getRateCurrency(this.state.currency2, 'USD')
         .then((rate) => {
-          var lot = (pip) / (risk * rate * 10);
-          lot = lot.toFixed(2);
-          var moneyWillLost = (pip) / (lot * rate * 10);
+          var lot = (risk) / (pip * rate * 10);
+          lot = parseFloat(lot.toFixed(2));
+          var moneyWillLost = pip * lot * rate * 10;
           moneyWillLost = moneyWillLost.toFixed(2);
-          if(currency2 === 'JPY') {
-            lot = (lot/100).toFixed(2);
+          if (currency2 === 'JPY') {
+            lot = (lot / 100).toFixed(2);
+            lot = parseFloat(lot);
           }
           this.setState({ lot, moneyWillLost, showResult: true })
 
         })
     } else if (currency1 === 'XAU') {
       var lot = risk / (pip * 100);
-      lot = lot.toFixed(2)
+      lot = parseFloat(lot.toFixed(2));
       var moneyWillLost = lot * pip * 100;
       moneyWillLost = moneyWillLost.toFixed(2);
       this.setState({ lot, moneyWillLost, showResult: true })
     } else {
       var lot = risk / (pip * 10);
-      lot = lot.toFixed(2)
+      lot = parseFloat(lot.toFixed(2));
       var moneyWillLost = lot * pip * 10;
       moneyWillLost = moneyWillLost.toFixed(2);
       this.setState({ lot, moneyWillLost, showResult: true })
     }
-
-
   }
 }
 
 const styles = {
   container: {
-    width: '90%',
+    width: '70%',
     paddingLeft: '5%'
   },
 
