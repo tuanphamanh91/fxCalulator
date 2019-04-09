@@ -16,11 +16,12 @@ class App extends Component {
     currency1: "EUR",
     currency2: "USD",
     risk: 5,
-    pip: 5,
+    pip: 0,
     entryPrice: 0,
     stopLossPrice: 0,
     lot: 0,
-    amountWillLost: 0
+    moneyWillLost: 0,
+    showResult: false
   }
 
   componentDidMount() {
@@ -32,7 +33,7 @@ class App extends Component {
       <div style={styles.container} >
         <div style={styles.title}> Forex Calculator </div>
         <Grid container spacing={24}>
-          <Grid item xs={5} sm={5}>
+          <Grid item xs={2} sm={5}>
             {this._renderCurrency1Selection()}
           </Grid>
           <Grid item xs={5} sm={5}>
@@ -40,9 +41,8 @@ class App extends Component {
           </Grid>
           <Grid item xs={2} sm={2}>
             <button style={styles.buttonRefresh}><img src={ReloadImage} alt="my image" onClick={() => this.getRate()} /></button>
-
           </Grid>
-          <Grid item xs={12} sm={12}>
+          <Grid item xs={10} sm={10}>
             <TextField
               id="amount-risk"
               name="amountRisk"
@@ -55,7 +55,7 @@ class App extends Component {
               style={{ textAlign: 'center' }}
             />
           </Grid>
-          <Grid item xs={6} sm={6}>
+          <Grid item xs={5} sm={5}>
             <TextField
               id="entryPrice"
               name="entryPrice"
@@ -67,7 +67,7 @@ class App extends Component {
               autoComplete="fname"
             />
           </Grid>
-          <Grid item xs={6} sm={6}>
+          <Grid item xs={5} sm={5}>
             <TextField
               id="stoploss"
               name="stoploss"
@@ -79,22 +79,24 @@ class App extends Component {
               autoComplete="lname"
             />
           </Grid>
+          <Grid item xs={2} sm={2}>
+            <Button variant="outlined" color="inherit" onClick={this.calculateAction.bind(this)}>
+              Calculate
+          </Button>
+          </Grid>
           <Grid item xs={12} sm={12}>
 
           </Grid>
-          <Grid item xs={6} sm={6}>
-            <div style={{ fontSize: 20 }}>{`Pair: ${this.state.currency1}${this.state.currency2}`}</div>
+          <Grid item xs={5} sm={5}>
+            <div style={{ fontSize: 20 }}>{`Pair: ${this.state.currency1}.${this.state.currency2}`}</div>
           </Grid>
-          <Grid item xs={6} sm={6}>
+          <Grid item xs={5} sm={5}>
             {this._renderPipValue()}
           </Grid>
+
         </Grid>
 
-        <div style={styles.button}>
-          <Button variant="outlined" color="inherit" onClick={this.calculateAction.bind(this)}>
-            Calculate
-          </Button>
-        </div>
+
         {this._renderResult()}
       </div>
     );
@@ -149,8 +151,14 @@ class App extends Component {
 
   _renderPipValue() {
     // this.setState({pip})
+    var text = "";
+    if (this.state.entryPrice >= this.state.stopLossPrice) {
+      text = `LONG: ${this.state.pip} pips`
+    } else {
+      text = `SHORT: ${this.state.pip} pips`
+    }
     return (
-      <div style={{ fontSize: 20, color: (this.state.entryPrice >= this.state.stopLossPrice) ? 'green' : 'red' }}> Pip: {this.state.pip}</div>
+      <div style={{ fontSize: 20 }}>{text}</div>
     )
   }
 
@@ -168,14 +176,14 @@ class App extends Component {
     if (pip < 0) {
       pip = 0 - pip;
     }
-    this.setState({ pip: 5 })
+    this.setState({ pip })
   }
 
   handleChangeSelection = name => event => {
     if (name === "currency2") {
-      this.setState({ [name]: event.target.value }, () => this.getRate());
+      this.setState({ [name]: event.target.value, showResult: false }, () => this.getRate());
     } else {
-      this.setState({ [name]: event.target.value });
+      this.setState({ [name]: event.target.value, showResult: false });
     }
 
   };
@@ -190,22 +198,24 @@ class App extends Component {
           } else {
             rate = rate.toFixed(4)
           }
-          this.setState({ entryPrice: rate, stopLossPrice: rate, rate, pip: 5, lot: 0 })
+          this.setState({ entryPrice: rate, stopLossPrice: rate, rate, pip: 0, lot: 0 })
         })
     }
   }
 
   _renderResult() {
-    const lot = this.state.lot.toFixed(2)
-
+    if (!this.state.showResult) return
     return (
       <div style={styles.resultContainer}>
         <Grid container spacing={24}>
           <Grid item xs={12} sm={12}>
-            <div>Lot: {lot}</div>
+            <div style={{ fontSize: 30 }}>RESULT:</div>
           </Grid>
           <Grid item xs={12} sm={12}>
-            <div></div>
+            <div>Lot: {this.state.lot}</div>
+          </Grid>
+          <Grid item xs={12} sm={12}>
+            <div>Money will lost: {this.state.moneyWillLost}$</div>
           </Grid>
         </Grid>
       </div>
@@ -218,12 +228,20 @@ class App extends Component {
       getRateCurrency(this.state.currency2, 'USD')
         .then((rate) => {
           var lot = (pip) / (risk * rate * 10);
-          this.setState({lot})
+          lot = lot.toFixed(2);
+          var moneyWillLost = (pip) / (lot * rate * 10);
+          moneyWillLost = moneyWillLost.toFixed(2);
+          this.setState({ lot, moneyWillLost, showResult: true })
+
         })
     } else {
       var lot = risk / (pip * 10);
-      this.setState({lot})
+      lot = lot.toFixed(2)
+      var moneyWillLost = lot * pip * 10;
+      moneyWillLost = moneyWillLost.toFixed(2);
+      this.setState({ lot, moneyWillLost, showResult: true })
     }
+
 
   }
 }
@@ -258,11 +276,11 @@ const styles = {
     paddingTop: 10
   },
   resultContainer: {
-      width: '60%',
-      paddingLeft: '20%',
-      paddingTop: '30px',
-      fontSize: 25,
-      color: 'green'
+    backgroundColor: "#cbe8c7",
+    marginTop: '30px',
+    width: '83%',
+    borderTop: "1px solid #000000",
+    fontSize: 25,
   }
 }
 
