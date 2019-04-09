@@ -24,10 +24,6 @@ class App extends Component {
     showResult: false
   }
 
-  componentDidMount() {
-    this.getRate();
-  }
-
   render() {
     return (
       <div style={styles.container} >
@@ -80,7 +76,7 @@ class App extends Component {
             />
           </Grid>
           <Grid item xs={2} sm={2}>
-            <Button variant="outlined" color="inherit" onClick={this.calculateAction.bind(this)}>
+            <Button variant="outlined" color="inherit" onClick={this.calculateLot.bind(this)}>
               Calculate
           </Button>
           </Grid>
@@ -150,7 +146,6 @@ class App extends Component {
   }
 
   _renderPipValue() {
-    // this.setState({pip})
     var text = "";
     if (this.state.entryPrice >= this.state.stopLossPrice) {
       text = `LONG: ${this.state.pip} pips`
@@ -170,7 +165,7 @@ class App extends Component {
     var pip = this.state.entryPrice - this.state.stopLossPrice;
     if (this.state.currency1 === 'JPY' || this.state.currency2 === 'JPY') {
       pip = (pip * 100).toFixed(1);
-    } else {
+    } else if (this.state.currency1 !== 'XAU') {
       pip = (pip * 10000).toFixed(1);
     }
     if (pip < 0) {
@@ -193,7 +188,7 @@ class App extends Component {
     if (currency1 !== currency2) {
       getRateCurrency(currency1, currency2)
         .then((rate) => {
-          if (this.state.currency1 === 'JPY' || this.state.currency2 === 'JPY') {
+          if (this.state.currency1 === 'JPY' || this.state.currency2 === 'JPY' || this.state.currency1 === 'XAU') {
             rate = rate.toFixed(2)
           } else {
             rate = rate.toFixed(4)
@@ -222,8 +217,10 @@ class App extends Component {
     )
   }
 
-  calculateAction() {
-    const { risk, pip, currency2 } = this.state;
+  calculateLot() {
+    const { risk, pip, currency1, currency2 } = this.state;
+    if (pip === 0 || risk === 0) return;
+
     if (currency2 !== 'USD') {
       getRateCurrency(this.state.currency2, 'USD')
         .then((rate) => {
@@ -231,9 +228,18 @@ class App extends Component {
           lot = lot.toFixed(2);
           var moneyWillLost = (pip) / (lot * rate * 10);
           moneyWillLost = moneyWillLost.toFixed(2);
+          if(currency2 === 'JPY') {
+            lot = (lot/100).toFixed(2);
+          }
           this.setState({ lot, moneyWillLost, showResult: true })
 
         })
+    } else if (currency1 === 'XAU') {
+      var lot = risk / (pip * 100);
+      lot = lot.toFixed(2)
+      var moneyWillLost = lot * pip * 100;
+      moneyWillLost = moneyWillLost.toFixed(2);
+      this.setState({ lot, moneyWillLost, showResult: true })
     } else {
       var lot = risk / (pip * 10);
       lot = lot.toFixed(2)
