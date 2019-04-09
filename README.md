@@ -1,1 +1,1 @@
-Calculate the position size in forex
+Calculate the position size in forex market
