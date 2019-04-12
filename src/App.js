@@ -19,6 +19,8 @@ class App extends Component {
     pip: 0,
     entryPrice: 0,
     stopLossPrice: 0,
+    takeProfitPrice: 0,
+    rr: 0,
     lot: 0,
     moneyWillLost: 0,
     showResult: false
@@ -38,7 +40,7 @@ class App extends Component {
           <Grid item xs={2} sm={2}>
             <button style={styles.buttonRefresh}><img src={ReloadImage} alt="reload" onClick={() => this.getRate()} /></button>
           </Grid>
-          <Grid item xs={10} sm={10}>
+          <Grid item xs={5} sm={5}>
             <TextField
               id="amount-risk"
               name="amountRisk"
@@ -49,6 +51,18 @@ class App extends Component {
               fullWidth
               autoComplete="fname"
               style={{ textAlign: 'center' }}
+            />
+          </Grid>
+          <Grid item xs={5} sm={5}>
+            <TextField
+              id="takeProfit"
+              name="takeProfit"
+              label="Take Profit:"
+              value={this.state.takeProfitPrice}
+              onChange={this.handleChange('takeProfitPrice')}
+              type="number"
+              fullWidth
+              autoComplete="fname"
             />
           </Grid>
           <Grid item xs={5} sm={5}>
@@ -162,7 +176,19 @@ class App extends Component {
   };
 
   calculatePip() {
-    var pip = this.state.entryPrice - this.state.stopLossPrice;
+    var { entryPrice, stopLossPrice, takeProfitPrice } = this.state;
+    var stoplossPip = this.pipBetweenTwoPrice(entryPrice, stopLossPrice);
+    if (takeProfitPrice > 0) {
+      var takeProfitPip = this.pipBetweenTwoPrice(takeProfitPrice, entryPrice);
+      var rr = takeProfitPip / stoplossPip;
+      rr = parseFloat(rr.toFixed(1));
+      this.setState({ rr })
+    }
+    this.setState({ 'pip': stoplossPip })
+  }
+
+  pipBetweenTwoPrice(price1, price2) {
+    var pip = price1 - price2;
     if (this.state.currency1 === 'JPY' || this.state.currency2 === 'JPY') {
       pip = (pip * 100).toFixed(1);
     } else if (this.state.currency1 !== 'XAU') {
@@ -172,7 +198,7 @@ class App extends Component {
     if (pip < 0) {
       pip = 0 - pip;
     }
-    this.setState({ pip })
+    return pip;
   }
 
   handleChangeSelection = name => event => {
@@ -195,13 +221,13 @@ class App extends Component {
             rate = rate.toFixed(4)
           }
           rate = parseFloat(rate);
-          this.setState({ entryPrice: rate, stopLossPrice: rate, rate, pip: 0, lot: 0 })
+          this.setState({ entryPrice: rate, stopLossPrice: rate, takeProfitPrice: rate, rate, pip: 0, lot: 0 })
         })
     }
   }
 
   _renderResult() {
-    if (!this.state.showResult) return
+    if (!this.state.showResult) return;
     return (
       <div style={styles.resultContainer}>
         <Grid container spacing={24}>
@@ -214,6 +240,13 @@ class App extends Component {
           <Grid item xs={12} sm={12}>
             <div>Money will lost: {this.state.moneyWillLost}$</div>
           </Grid>
+          {
+            (this.state.rr > 0) ?
+              <Grid item xs={12} sm={12}>
+                <div>Reward/risk: {this.state.rr}</div>
+              </Grid>
+              : <div></div>
+          }
         </Grid>
       </div>
     )
@@ -229,7 +262,8 @@ class App extends Component {
           var lot = (risk) / (pip * rate * 10);
           lot = parseFloat(lot.toFixed(2));
           var moneyWillLost = pip * lot * rate * 10;
-          moneyWillLost = moneyWillLost.toFixed(2);
+          var fee = lot * 7;
+          moneyWillLost = (moneyWillLost + fee).toFixed(2);
           if (currency2 === 'JPY') {
             lot = (lot / 100).toFixed(2);
             lot = parseFloat(lot);
@@ -241,13 +275,15 @@ class App extends Component {
       var lot = risk / (pip * 100);
       lot = parseFloat(lot.toFixed(2));
       var moneyWillLost = lot * pip * 100;
-      moneyWillLost = moneyWillLost.toFixed(2);
+      var fee = lot * 7;
+      moneyWillLost = (moneyWillLost + fee).toFixed(2);
       this.setState({ lot, moneyWillLost, showResult: true })
     } else {
       var lot = risk / (pip * 10);
       lot = parseFloat(lot.toFixed(2));
       var moneyWillLost = lot * pip * 10;
-      moneyWillLost = moneyWillLost.toFixed(2);
+      var fee = lot * 7;
+      moneyWillLost = (moneyWillLost + fee).toFixed(2);
       this.setState({ lot, moneyWillLost, showResult: true })
     }
   }
