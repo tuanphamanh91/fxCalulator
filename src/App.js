@@ -261,13 +261,13 @@ class App extends Component {
         .then((rate) => {
           var lot = (risk) / (pip * rate * 10);
           lot = parseFloat(lot.toFixed(2));
-          var moneyWillLost = pip * lot * rate * 10;
-          var fee = lot * 7;
-          moneyWillLost = (moneyWillLost + fee).toFixed(2);
           if (currency2 === 'JPY') {
             lot = (lot / 100).toFixed(2);
             lot = parseFloat(lot);
           }
+          var fee = lot * 7;
+          var moneyWillLost = (pip * lot * rate * 10 + fee).toFixed(2);
+
           this.setState({ lot, moneyWillLost, showResult: true })
 
         })
