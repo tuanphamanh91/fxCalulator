@@ -8,7 +8,12 @@ import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import { getRateCurrency } from './api';
 import ReloadImage from './images/refresh-arrow.png';
-
+import {
+  BrowserView,
+  MobileView,
+  isBrowser,
+  isMobile
+} from "react-device-detect";
 class App extends Component {
 
   state = {
@@ -22,158 +27,11 @@ class App extends Component {
     takeProfitPrice: 0,
     rr: 0,
     lot: 0,
+    fee: 0,
     moneyWillLost: 0,
     showResult: false
   }
 
-  render() {
-    return (
-      <div style={styles.container} >
-        <div style={styles.title}> Forex Calculator </div>
-        <Grid container spacing={24}>
-          <Grid item xs={5} sm={5}>
-            {this._renderCurrency1Selection()}
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            {this._renderCurrency2Selection()}
-          </Grid>
-          <Grid item xs={2} sm={2}>
-            <button style={styles.buttonRefresh}><img src={ReloadImage} alt="reload" onClick={() => this.getRate()} /></button>
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            <TextField
-              id="amount-risk"
-              name="amountRisk"
-              label="Amount To Risk ($):"
-              type="number"
-              value={this.state.risk}
-              onChange={this.handleChange('risk')}
-              fullWidth
-              autoComplete="fname"
-              style={{ textAlign: 'center' }}
-            />
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            <TextField
-              id="takeProfit"
-              name="takeProfit"
-              label="Take Profit:"
-              value={this.state.takeProfitPrice}
-              onChange={this.handleChange('takeProfitPrice')}
-              type="number"
-              fullWidth
-              autoComplete="fname"
-            />
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            <TextField
-              id="entryPrice"
-              name="entryPrice"
-              label="Entry Price:"
-              value={this.state.entryPrice}
-              onChange={this.handleChange('entryPrice')}
-              type="number"
-              fullWidth
-              autoComplete="fname"
-            />
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            <TextField
-              id="stoploss"
-              name="stoploss"
-              label="Stoploss Price:"
-              type="number"
-              value={this.state.stopLossPrice}
-              onChange={this.handleChange('stopLossPrice')}
-              fullWidth
-              autoComplete="lname"
-            />
-          </Grid>
-          <Grid item xs={2} sm={2}>
-            <Button variant="outlined" color="inherit" onClick={this.calculateLot.bind(this)}>
-              Calculate
-          </Button>
-          </Grid>
-          <Grid item xs={12} sm={12}>
-
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            <div style={{ fontSize: 20 }}>{`Pair: ${this.state.currency1}${this.state.currency2}`}</div>
-          </Grid>
-          <Grid item xs={5} sm={5}>
-            {this._renderPipValue()}
-          </Grid>
-
-        </Grid>
-
-
-        {this._renderResult()}
-      </div>
-    );
-  }
-
-  _renderCurrency1Selection() {
-    return (
-      <FormControl style={{ width: '100%' }}>
-        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
-        <Select
-          native
-          onChange={this.handleChangeSelection("currency1")}
-          value={this.state.currency1}
-        >
-          <option value={'USD'}>USD</option>
-          <option value={'EUR'}>EUR</option>
-          <option value={'JPY'}>JPY</option>
-          <option value={'GBP'}>GBP</option>
-          <option value={'AUD'}>AUD</option>
-          <option value={'CHF'}>CHF</option>
-          <option value={'NZD'}>NZD</option>
-          <option value={'CAD'}>CAD</option>
-          <option value={'AUD'}>AUD</option>
-          <option value={'XAU'}>XAU</option>
-        </Select>
-      </FormControl>
-    )
-  }
-
-  _renderCurrency2Selection() {
-    return (
-      <FormControl style={{ width: '100%' }}>
-        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
-        <Select
-          native
-          onChange={this.handleChangeSelection("currency2")}
-          value={this.state.currency2}
-        >
-          <option value={'USD'}>USD</option>
-          <option value={'EUR'}>EUR</option>
-          <option value={'JPY'}>JPY</option>
-          <option value={'GBP'}>GBP</option>
-          <option value={'AUD'}>AUD</option>
-          <option value={'CHF'}>CHF</option>
-          <option value={'NZD'}>NZD</option>
-          <option value={'CAD'}>CAD</option>
-          <option value={'AUD'}>AUD</option>
-        </Select>
-      </FormControl>
-    )
-  }
-
-  _renderPipValue() {
-    var text = "";
-    if (this.state.entryPrice >= this.state.stopLossPrice) {
-      text = `LONG: ${this.state.pip} pips.`
-    } else {
-      text = `SHORT: ${this.state.pip} pips.`
-    }
-    return (
-      <div style={{ fontSize: 20 }}>{text}</div>
-    )
-  }
-
-  handleChange = name => event => {
-    this.setState({ [name]: parseFloat(event.target.value) }, () => this.calculatePip());
-  };
 
   calculatePip() {
     var { entryPrice, stopLossPrice, takeProfitPrice } = this.state;
@@ -226,20 +84,77 @@ class App extends Component {
     }
   }
 
+  calculateLot() {
+    const { risk, pip, currency1, currency2 } = this.state;
+    if (pip === 0 || risk === 0) return;
+
+    if (currency2 !== 'USD') {
+      getRateCurrency(this.state.currency2, 'USD')
+        .then((rate) => {
+          let lot = (risk) / (pip * rate * 10);
+          lot = parseFloat(lot.toFixed(2));
+          let fee = lot * 7;
+          let moneyWillLost = (pip * lot * rate * 10).toFixed(2);
+
+          if (currency2 === 'JPY') {
+            lot = (lot / 100).toFixed(2);
+            lot = parseFloat(lot);
+            fee = lot * 7;
+            moneyWillLost = (pip * lot * rate * 10 * 100).toFixed(2);
+          }
+
+          this.setState({ lot, fee, moneyWillLost, showResult: true })
+
+        })
+    } else if (currency1 === 'XAU') {
+      let lot = risk / (pip * 100);
+      lot = parseFloat(lot.toFixed(2));
+      let moneyWillLost = lot * pip * 100;
+      let fee = lot * 7;
+      moneyWillLost = (moneyWillLost).toFixed(2);
+      this.setState({ lot, fee, moneyWillLost, showResult: true })
+    } else {
+      let lot = risk / (pip * 10);
+      lot = parseFloat(lot.toFixed(2));
+      let moneyWillLost = lot * pip * 10;
+      let fee = lot * 7;
+      moneyWillLost = (moneyWillLost).toFixed(2);
+      this.setState({ lot, fee, moneyWillLost, showResult: true })
+    }
+  }
+
+  handleChange = name => event => {
+    this.setState({ [name]: parseFloat(event.target.value) }, () => this.calculatePip());
+  };
+
   _renderResult() {
     if (!this.state.showResult) return;
+    const isLong = this.state.entryPrice >= this.state.stopLossPrice;
     return (
-      <div style={styles.resultContainer}>
+      <div style={{
+        backgroundColor: isLong ? "#cbe8c7" : '#fda7b6',
+        margin: '30px 0px',
+        borderTop: "1px solid #000000",
+        fontSize: 25,
+      }}>
         <Grid container spacing={24}>
-          <Grid item xs={12} sm={12}>
-            <div style={{ fontSize: 30 }}>RESULT:</div>
+          <Grid item xs={6} sm={6}>
+            <div style={{ fontSize: 30, textAlign: 'center'}}> {this.state.lot} lot</div>
           </Grid>
-          <Grid item xs={12} sm={12}>
-            <div>Lot: {this.state.lot}</div>
+          <Grid item xs={6} sm={6}>
+            <div style={{fontSize: 30, textAlign: 'center'}}>Total: {(parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)).toFixed(2)}$</div>
           </Grid>
-          <Grid item xs={12} sm={12}>
-            <div>Money will lost: {this.state.moneyWillLost}$</div>
+          <Grid item xs={4} sm={4}>
+            <div style={{fontSize: 16, textAlign: 'center'}}>Lost: {this.state.moneyWillLost}$</div>
           </Grid>
+          <Grid item xs={4} sm={4}>
+            <div style={{fontSize: 16, textAlign: 'center'}}>Fee: {this.state.fee.toFixed(2)}$</div>
+          </Grid>
+          <Grid item xs={4} sm={4}>
+            <div style={{fontSize: 16, textAlign: 'center'}}>MinRR: {((parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost))/this.state.risk).toFixed(2)}</div>
+          </Grid>
+
+
           {
             (this.state.rr > 0) ?
               <Grid item xs={12} sm={12}>
@@ -252,78 +167,203 @@ class App extends Component {
     )
   }
 
-  calculateLot() {
-    const { risk, pip, currency1, currency2 } = this.state;
-    if (pip === 0 || risk === 0) return;
+  _renderCurrency1Selection() {
+    return (
+      <FormControl style={{ width: '100%' }}>
+        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
+        <Select
+          native
+          onChange={this.handleChangeSelection("currency1")}
+          value={this.state.currency1}
+        >
+          <option value={'USD'}>USD</option>
+          <option value={'EUR'}>EUR</option>
+          <option value={'JPY'}>JPY</option>
+          <option value={'GBP'}>GBP</option>
+          <option value={'AUD'}>AUD</option>
+          <option value={'CHF'}>CHF</option>
+          <option value={'NZD'}>NZD</option>
+          <option value={'CAD'}>CAD</option>
+          <option value={'AUD'}>AUD</option>
+          <option value={'XAU'}>XAU</option>
+        </Select>
+      </FormControl>
+    )
+  }
 
-    if (currency2 !== 'USD') {
-      getRateCurrency(this.state.currency2, 'USD')
-        .then((rate) => {
-          var lot = (risk) / (pip * rate * 10);
-          lot = parseFloat(lot.toFixed(2));
-          if (currency2 === 'JPY') {
-            lot = (lot / 100).toFixed(2);
-            lot = parseFloat(lot);
-          }
-          var fee = lot * 7;
-          var moneyWillLost = (pip * lot * rate * 10 + fee).toFixed(2);
+  _renderCurrency2Selection() {
+    return (
+      <FormControl style={{ width: '100%' }}>
+        <InputLabel htmlFor="age-native-simple">Currency:</InputLabel>
+        <Select
+          native
+          onChange={this.handleChangeSelection("currency2")}
+          value={this.state.currency2}
+        >
+          <option value={'USD'}>USD</option>
+          <option value={'EUR'}>EUR</option>
+          <option value={'JPY'}>JPY</option>
+          <option value={'GBP'}>GBP</option>
+          <option value={'AUD'}>AUD</option>
+          <option value={'CHF'}>CHF</option>
+          <option value={'NZD'}>NZD</option>
+          <option value={'CAD'}>CAD</option>
+          <option value={'AUD'}>AUD</option>
+        </Select>
+      </FormControl>
+    )
+  }
 
-          this.setState({ lot, moneyWillLost, showResult: true })
-
-        })
-    } else if (currency1 === 'XAU') {
-      var lot = risk / (pip * 100);
-      lot = parseFloat(lot.toFixed(2));
-      var moneyWillLost = lot * pip * 100;
-      var fee = lot * 7;
-      moneyWillLost = (moneyWillLost + fee).toFixed(2);
-      this.setState({ lot, moneyWillLost, showResult: true })
+  _renderPipValue() {
+    var text = "";
+    const isLong = this.state.entryPrice >= this.state.stopLossPrice;
+    if (isLong) {
+      text = `LONG: ${this.state.pip} pips.`
     } else {
-      var lot = risk / (pip * 10);
-      lot = parseFloat(lot.toFixed(2));
-      var moneyWillLost = lot * pip * 10;
-      var fee = lot * 7;
-      moneyWillLost = (moneyWillLost + fee).toFixed(2);
-      this.setState({ lot, moneyWillLost, showResult: true })
+      text = `SHORT: ${this.state.pip} pips.`
     }
+    return (
+      <div style={{ fontSize: 16, marginTop: 10, color: isLong ? 'green' : 'red' }}>{text}</div>
+    )
+  }
+
+
+
+  render() {
+    return (
+      <div style={styles.container} >
+        <div style={styles.title}> Forex Calculator </div>
+        <div style={styles.headerContainer}>
+          <div style={styles.info}>
+            <div style={{ fontSize: 20, fontWeight: 'bold' }}>{`${this.state.currency1}${this.state.currency2}`}</div>
+            {this._renderPipValue()}
+          </div>
+          <button style={styles.buttonRefresh}><img style={styles.imgRefresh} src={ReloadImage} alt="reload" onClick={() => this.getRate()} /></button>
+
+        </div>
+
+        {this._renderResult()}
+
+        <Grid container spacing={24}>
+
+          <Grid item xs={6} sm={6}>
+            {this._renderCurrency1Selection()}
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            {this._renderCurrency2Selection()}
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            <TextField
+              id="amount-risk"
+              name="amountRisk"
+              label="Amount To Risk ($):"
+              type="number"
+              value={this.state.risk}
+              onChange={this.handleChange('risk')}
+              fullWidth
+              autoComplete="fname"
+              style={{ textAlign: 'center' }}
+            />
+          </Grid>
+          <Grid item xs={6} sm={6}>
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            <TextField
+              id="entryPrice"
+              name="entryPrice"
+              label="Entry:"
+              value={this.state.entryPrice}
+              onChange={this.handleChange('entryPrice')}
+              type="number"
+              fullWidth
+              autoComplete="fname"
+            />
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            <TextField
+              id="stoploss"
+              name="stoploss"
+              label="Stoploss:"
+              type="number"
+              value={this.state.stopLossPrice}
+              onChange={this.handleChange('stopLossPrice')}
+              fullWidth
+              autoComplete="lname"
+            />
+          </Grid>
+
+          {/* <Grid item xs={6} sm={6}>
+            <TextField
+              id="takeProfit"
+              name="takeProfit"
+              label="Take Profit:"
+              value={this.state.takeProfitPrice}
+              onChange={this.handleChange('takeProfitPrice')}
+              type="number"
+              fullWidth
+              autoComplete="fname"
+            />
+          </Grid>
+          <Grid item xs={6} sm={6} /> */}
+          <Grid item xs={6} sm={6}>
+            <Button variant="outlined" color="inherit" onClick={this.calculateLot.bind(this)}>
+              Calculate
+          </Button>
+          </Grid>
+        </Grid>
+
+
+      </div>
+    );
   }
 }
 
 const styles = {
   container: {
-    width: '70%',
-    paddingLeft: '5%'
+    margin: '20px',
+    padding: !isMobile ? '100px 300px' : 0
   },
 
   title: {
     fontSize: 30,
     textAlign: 'center',
     width: '100%',
-    margin: '20px 0px',
+    margin: '20px',
   },
   button: {
     textAlign: 'center',
     marginTop: '30px',
     fontSize: 25,
   },
+  headerContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 50,
+  },
+  info: {
+    flex: 4,
+  },
   buttonRefresh: {
     backgroundColor: 'transparent',
     backgroundRepeat: 'no-repeat',
     border: 'none',
     cursor: 'pointer',
-    overflow: 'hidden',
+    // overflow: 'hidden',
     outline: 'none',
     alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    paddingTop: 10
+    width: '30px',
+    height: '30px',
+    flex: 1
+  },
+  imgRefresh: {
+    backgroundSize: 'contain',
+    objectFit: 'contain',
+
   },
   resultContainer: {
-    backgroundColor: "#cbe8c7",
-    marginTop: '30px',
-    width: '83%',
-    borderTop: "1px solid #000000",
-    fontSize: 25,
+
   }
 }
 
