@@ -9,9 +9,6 @@ import Select from '@material-ui/core/Select';
 import { getRateCurrency } from './api';
 import ReloadImage from './images/refresh-arrow.png';
 import {
-  BrowserView,
-  MobileView,
-  isBrowser,
   isMobile
 } from "react-device-detect";
 class App extends Component {
@@ -132,7 +129,7 @@ class App extends Component {
     const isLong = this.state.entryPrice >= this.state.stopLossPrice;
     return (
       <div style={{
-        backgroundColor: isLong ? "#cbe8c7" : '#fda7b6',
+        backgroundColor: isLong ? "#cbe8c7" : '#f5cad2',
         margin: '30px 0px',
         borderTop: "1px solid #000000",
         fontSize: 25,
