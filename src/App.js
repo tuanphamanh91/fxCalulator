@@ -136,19 +136,19 @@ class App extends Component {
       }}>
         <Grid container spacing={24}>
           <Grid item xs={6} sm={6}>
-            <div style={{ fontSize: 30, textAlign: 'center'}}> {this.state.lot} lot</div>
+            <div style={{ fontSize: 30, textAlign: 'center' }}> {this.state.lot} lot</div>
           </Grid>
           <Grid item xs={6} sm={6}>
-            <div style={{fontSize: 30, textAlign: 'center'}}>Total: {(parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)).toFixed(2)}$</div>
+            <div style={{ fontSize: 30, textAlign: 'center' }}>Total: {(parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)).toFixed(2)}$</div>
           </Grid>
           <Grid item xs={4} sm={4}>
-            <div style={{fontSize: 16, textAlign: 'center'}}>Lost: {this.state.moneyWillLost}$</div>
+            <div style={{ fontSize: 16, textAlign: 'center' }}>Lost: {this.state.moneyWillLost}$</div>
           </Grid>
           <Grid item xs={4} sm={4}>
-            <div style={{fontSize: 16, textAlign: 'center'}}>Fee: {this.state.fee.toFixed(2)}$</div>
+            <div style={{ fontSize: 16, textAlign: 'center' }}>Fee: {this.state.fee.toFixed(2)}$</div>
           </Grid>
           <Grid item xs={4} sm={4}>
-            <div style={{fontSize: 16, textAlign: 'center'}}>MinRR: {((parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost))/this.state.risk).toFixed(2)}</div>
+            <div style={{ fontSize: 16, textAlign: 'center' }}>MinRR: {((parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)) / this.state.risk).toFixed(2)}</div>
           </Grid>
 
 
@@ -350,14 +350,14 @@ const styles = {
     // overflow: 'hidden',
     outline: 'none',
     alignItems: 'center',
-    width: '30px',
-    height: '30px',
+    width: '16px',
+    height: '16px',
     flex: 1
   },
   imgRefresh: {
     backgroundSize: 'contain',
     objectFit: 'contain',
-
+    width: 'inherit'
   },
   resultContainer: {
 
