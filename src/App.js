@@ -14,12 +14,14 @@ import {
 class App extends Component {
 
   state = {
+    multiMode: true,
     rate: 0,
     currency1: "EUR",
     currency2: "USD",
     risk: 5,
     pip: 0,
-    entryPrice: 0,
+    entryPrice1: 0,
+    entryPrice2: 0,
     stopLossPrice: 0,
     takeProfitPrice: 0,
     rr: 0,
@@ -31,10 +33,11 @@ class App extends Component {
 
 
   calculatePip() {
-    var { entryPrice, stopLossPrice, takeProfitPrice } = this.state;
-    var stoplossPip = this.pipBetweenTwoPrice(entryPrice, stopLossPrice);
+    var { entryPrice1, entryPrice2, stopLossPrice, takeProfitPrice, multiMode } = this.state;
+    const entry = multiMode ? (entryPrice1 + entryPrice2) / 2 : entryPrice1;
+    var stoplossPip = this.pipBetweenTwoPrice(entry, stopLossPrice);
     if (takeProfitPrice > 0) {
-      var takeProfitPip = this.pipBetweenTwoPrice(takeProfitPrice, entryPrice);
+      var takeProfitPip = this.pipBetweenTwoPrice(takeProfitPrice, entry);
       var rr = takeProfitPip / stoplossPip;
       rr = parseFloat(rr.toFixed(1));
       this.setState({ rr })
@@ -76,7 +79,7 @@ class App extends Component {
             rate = rate.toFixed(4)
           }
           rate = parseFloat(rate);
-          this.setState({ entryPrice: rate, stopLossPrice: rate, takeProfitPrice: rate, rate, pip: 0, lot: 0 })
+          this.setState({ entryPrice1: rate, entryPrice2: rate, stopLossPrice: rate, takeProfitPrice: rate, rate, pip: 0, lot: 0 })
         })
     }
   }
@@ -126,7 +129,7 @@ class App extends Component {
 
   _renderResult() {
     if (!this.state.showResult) return;
-    const isLong = this.state.entryPrice >= this.state.stopLossPrice;
+    const isLong = this.state.entryPrice1 >= this.state.stopLossPrice;
     return (
       <div style={{
         backgroundColor: isLong ? "#cbe8c7" : '#f5cad2',
@@ -139,7 +142,7 @@ class App extends Component {
             <div style={{ fontSize: 30, textAlign: 'center' }}> {this.state.lot} lot</div>
           </Grid>
           <Grid item xs={6} sm={6}>
-            <div style={{ fontSize: 30, textAlign: 'center' }}>Total: {(parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)).toFixed(2)}$</div>
+            <div style={{ fontSize: 30, textAlign: 'center' }}>{(parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)).toFixed(2)}$</div>
           </Grid>
           <Grid item xs={4} sm={4}>
             <div style={{ fontSize: 16, textAlign: 'center' }}>Lost: {this.state.moneyWillLost}$</div>
@@ -148,17 +151,18 @@ class App extends Component {
             <div style={{ fontSize: 16, textAlign: 'center' }}>Fee: {this.state.fee.toFixed(2)}$</div>
           </Grid>
           <Grid item xs={4} sm={4}>
-            <div style={{ fontSize: 16, textAlign: 'center' }}>MinRR: {((parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)) / this.state.risk).toFixed(2)}</div>
+          <div style={{ fontSize: 16, textAlign: 'center' }}>Reward/risk: {this.state.rr}</div>
+            {/* <div style={{ fontSize: 16, textAlign: 'center' }}>MinRR: {((parseFloat(this.state.fee) + parseFloat(this.state.moneyWillLost)) / this.state.moneyWillLost).toFixed(2)}</div> */}
           </Grid>
 
 
-          {
+          {/* {
             (this.state.rr > 0) ?
               <Grid item xs={12} sm={12}>
                 <div>Reward/risk: {this.state.rr}</div>
               </Grid>
               : <div></div>
-          }
+          } */}
         </Grid>
       </div>
     )
@@ -213,7 +217,7 @@ class App extends Component {
 
   _renderPipValue() {
     var text = "";
-    const isLong = this.state.entryPrice >= this.state.stopLossPrice;
+    const isLong = this.state.entryPrice1 >= this.state.stopLossPrice;
     if (isLong) {
       text = `LONG: ${this.state.pip} pips.`
     } else {
@@ -227,9 +231,16 @@ class App extends Component {
 
 
   render() {
+    const { multiMode } = this.state
     return (
       <div style={styles.container} >
-        <div style={styles.title}> Forex Calculator </div>
+        <button style={styles.titleBtn} onClick={() => this.setState({ multiMode: !this.state.multiMode })}>
+
+          <div style={styles.title}>
+            {this.state.multiMode ? 'Multiple Forex Calculator' : 'Forex Calculator'}
+          </div>
+        </button>
+
         <div style={styles.headerContainer}>
           <div style={styles.info}>
             <div style={{ fontSize: 20, fontWeight: 'bold' }}>{`${this.state.currency1}${this.state.currency2}`}</div>
@@ -266,11 +277,11 @@ class App extends Component {
           </Grid>
           <Grid item xs={6} sm={6}>
             <TextField
-              id="entryPrice"
-              name="entryPrice"
-              label="Entry:"
-              value={this.state.entryPrice}
-              onChange={this.handleChange('entryPrice')}
+              id="entryPrice1"
+              name="entryPrice1"
+              label={multiMode ? "Entry1:" : "Entry:"}
+              value={this.state.entryPrice1}
+              onChange={this.handleChange('entryPrice1')}
               type="number"
               fullWidth
               autoComplete="fname"
@@ -288,8 +299,23 @@ class App extends Component {
               autoComplete="lname"
             />
           </Grid>
-
-          {/* <Grid item xs={6} sm={6}>
+          {multiMode ?
+            <Grid item xs={6} sm={6}>
+              <TextField
+                id="entryPrice2"
+                name="entryPrice2"
+                label="Entry2:"
+                value={this.state.entryPrice2}
+                onChange={this.handleChange('entryPrice2')}
+                type="number"
+                fullWidth
+                autoComplete="fname"
+              />
+            </Grid>
+            : <Grid item xs={6} sm={6} /> 
+          }
+          
+            <Grid item xs={6} sm={6}>
             <TextField
               id="takeProfit"
               name="takeProfit"
@@ -301,7 +327,7 @@ class App extends Component {
               autoComplete="fname"
             />
           </Grid>
-          <Grid item xs={6} sm={6} /> */}
+         
           <Grid item xs={6} sm={6}>
             <Button variant="outlined" color="inherit" onClick={this.calculateLot.bind(this)}>
               Calculate
@@ -319,6 +345,17 @@ const styles = {
   container: {
     margin: '20px',
     padding: !isMobile ? '100px 300px' : 0
+  },
+
+  titleBtn: {
+    backgroundColor: 'transparent',
+    backgroundRepeat: 'no-repeat',
+    border: 'none',
+    cursor: 'pointer',
+    // overflow: 'hidden',
+    outline: 'none',
+    alignItems: 'center',
+    width: '100%'
   },
 
   title: {
